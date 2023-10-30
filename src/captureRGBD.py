@@ -37,8 +37,7 @@ class RealSenseCapture:
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
         depth_image = self.process_depth_frame(depth_frame)
-        color_image = np.asanyarray(color_frame.get_data())
-        return depth_image, color_image
+        return depth_frame, color_frame, depth_image
 
     def process_depth_frame(self, depth_frame):
         depth_image = np.asanyarray(depth_frame.get_data())
@@ -65,7 +64,7 @@ if __name__ == "__main__":
     capture = RealSenseCapture()
     try:
         while True:
-            depth_image, color_image = capture.process_frame()
-            capture.save_pointcloud(depth_image, color_image)
+            depth_frame, color_frame, depth_image = capture.process_frame()
+            capture.save_pointcloud(depth_frame, color_frame)
     finally:
         capture.stop()

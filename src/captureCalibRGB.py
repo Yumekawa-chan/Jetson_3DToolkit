@@ -1,20 +1,24 @@
-import cv2
-from datetime import datetime
-
-timestamp = datetime.now().strftime("%H%M%S")
+import socket
+import threading
 
 
-def capture():
-    cap = cv2.VideoCapture(0)
-    ret, frame = cap.read()
-    frame = cv2.imwrite(frame, f"{timestamp}_num.png")
-    cap.release()
-    cv2.destroyAllWindows()
+def wait_for_key():
+    input("Press Enter to send capture command...")
+    for client in clients:
+        client.sendall(b'capture')
 
 
-def main():
-    capture()
+def accept_clients():
+    while True:
+        client, addr = server.accept()
+        clients.append(client)
+        print(f'Connected by {addr}')
 
 
-if __name__ == "__main__":
-    main()
+clients = []
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(('0.0.0.0', 65432))
+server.listen()
+
+threading.Thread(target=accept_clients).start()
+wait_for_key()

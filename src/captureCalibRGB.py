@@ -5,22 +5,18 @@ import threading
 import io
 
 def capture_image():
-    # カメラの初期化
-    cap = cv2.VideoCapture(0)  # 0はデフォルトのカメラを指します
+    cap = cv2.VideoCapture(0) 
     ret, frame = cap.read()
     if not ret:
         print("Failed to capture image")
         return None
 
-    # メモリバッファに画像を保存
     mem_buffer = io.BytesIO()
     is_success, buffer = cv2.imencode(".png", frame)
     mem_buffer.write(buffer)
 
-    # カメラのリリース
     cap.release()
 
-    # バッファからバイトデータを取得
     return mem_buffer.getvalue()
 
 def handle_client(client, jetson_id):
@@ -36,7 +32,7 @@ def handle_client(client, jetson_id):
 def accept_clients():
     while True:
         client, addr = server.accept()
-        jetson_id = len(clients) + 1  # JetsonデバイスのID
+        jetson_id = len(clients) + 1 
         clients.append(client)
         print(f'Connected by {addr}')
         threading.Thread(target=handle_client, args=(client, jetson_id), daemon=True).start()

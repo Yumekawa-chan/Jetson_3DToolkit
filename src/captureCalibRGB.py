@@ -4,7 +4,7 @@ import cv2
 import io
 
 def capture_image():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
     ret, frame = cap.read()
     if not ret:
         print("Failed to capture image")

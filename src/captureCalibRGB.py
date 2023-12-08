@@ -32,6 +32,7 @@ def connect_and_handle_server(jetson_id):
                     filename = f"{timestamp}_{jetson_id}.png"
                     client_socket.sendall(filename.encode() + b'\n')
                     client_socket.sendall(image_data)
+                    client_socket.sendall(b'ENDOFIMAGE')
 
 jetson_id = 1
 connect_and_handle_server(jetson_id)

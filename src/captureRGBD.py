@@ -23,23 +23,20 @@ def capture_image():
 
         if not depth_frame or not color_frame:
             print("Could not acquire depth or color frames.")
-            return None, None
+            return None
 
         # Convert images to numpy arrays
         depth_image = np.asanyarray(depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
 
-        # Convert depth image to grayscale
-        depth_image_gray = cv2.convertScaleAbs(depth_image, alpha=0.03)
+        # Convert depth image to grayscale without applying colormap
+        depth_image_gray = cv2.convertScaleAbs(depth_image)
 
         # Ensure both color and depth images have the same shape
         depth_image_gray = cv2.resize(depth_image_gray, (640, 480), interpolation=cv2.INTER_NEAREST)
 
-        # Convert depth image to color for visualization
-        depth_colormap = cv2.applyColorMap(depth_image_gray, cv2.COLORMAP_JET)
-
         # Combine color image and depth image side by side
-        combined_image = np.hstack((color_image, depth_colormap))
+        combined_image = np.hstack((color_image, depth_image_gray))
 
         # Encode the combined image as jpeg
         is_success, buffer = cv2.imencode(".png", combined_image)
@@ -68,16 +65,6 @@ def connect_and_handle_server(jetson_id):
                     client_socket.sendall(image_data)
                     client_socket.sendall(b'ENDOFIMAGE')
                     client_socket.recv(1024) 
-
-                    # Separate the combined image into color and depth images
-                    combined_image = cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
-                    color_image, depth_image_gray = np.split(combined_image, 2, axis=1)
-
-                    # Save the split images in their respective folders
-                    color_filename = f"color_{filename}"
-                    depth_filename = f"depth_{filename}"
-                    cv2.imwrite(color_filename, color_image)
-                    cv2.imwrite(depth_filename, depth_image_gray)
 
 jetson_id = 1
 connect_and_handle_server(jetson_id)

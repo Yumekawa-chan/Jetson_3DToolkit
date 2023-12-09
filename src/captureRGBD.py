@@ -29,17 +29,19 @@ def capture_image():
         depth_image = np.asanyarray(depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
 
-        # Convert depth image to 8-bit for visualization
+        # Convert depth image to color for visualization
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
-        # Encode the frames as jpeg to send over the network
-        is_success_color, buffer_color = cv2.imencode(".png", color_image)
-        is_success_depth, buffer_depth = cv2.imencode(".png", depth_image)
+        # Combine color image and depth image side by side
+        combined_image = np.hstack((color_image, depth_colormap))
 
-        if not is_success_color or not is_success_depth:
-            print("Could not encode images.")
-            return None, None
+        # Encode the combined image as jpeg
+        is_success, buffer = cv2.imencode(".png", combined_image)
+        if not is_success:
+            print("Could not encode combined image.")
+            return None
 
-        return buffer_color.tobytes(), buffer_depth.tobytes()
+        return buffer.tobytes()
     finally:
         # Stop streaming
         pipeline.stop()
@@ -52,17 +54,12 @@ def connect_and_handle_server(jetson_id):
         while True:
             data = client_socket.recv(1024)
             if data == b'capture':
-                color_image_data, depth_image_data = capture_image()
-                if color_image_data and depth_image_data:
+                image_data = capture_image()
+                if image_data:
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    color_filename = f"{timestamp}_{jetson_id}_color.png"
-                    depth_filename = f"{timestamp}_{jetson_id}_depth.png"
-                    client_socket.sendall(f"FILENAME:{color_filename}\n".encode())
-                    client_socket.sendall(color_image_data)
-                    client_socket.sendall(b'ENDOFIMAGE')
-                    client_socket.recv(1024) 
-                    client_socket.sendall(f"FILENAME:{depth_filename}\n".encode())
-                    client_socket.sendall(depth_image_data)
+                    filename = f"{timestamp}_{jetson_id}_combined.png"
+                    client_socket.sendall(f"FILENAME:{filename}\n".encode())
+                    client_socket.sendall(image_data)
                     client_socket.sendall(b'ENDOFIMAGE')
                     client_socket.recv(1024) 
 

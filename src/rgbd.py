@@ -1,12 +1,10 @@
 import socket
-import datetime
-import cv2
-import io
 import pyrealsense2 as rs
 import numpy as np
+import cv2
+import time
 
-def capture_image():
-    # RealSenseカメラの設定
+def capture_images():
     pipeline = rs.pipeline()
     config = rs.config()
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
@@ -18,54 +16,44 @@ def capture_image():
         frames = pipeline.wait_for_frames()
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
-
         if not depth_frame or not color_frame:
-            print("Could not acquire depth or color frames.")
             return None, None
 
-        # Depth画像の変換
         depth_image = np.asanyarray(depth_frame.get_data())
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
-        # Color画像の変換
         color_image = np.asanyarray(color_frame.get_data())
 
-        depth_mem_buffer = io.BytesIO()
-        color_mem_buffer = io.BytesIO()
+        return color_image, depth_image
 
-        is_success, depth_buffer = cv2.imencode('.png', depth_colormap)
-        is_success, color_buffer = cv2.imencode('.png', color_image)
-
-        depth_mem_buffer.write(depth_buffer)
-        color_mem_buffer.write(color_buffer)
-
-        return depth_mem_buffer.getvalue(), color_mem_buffer.getvalue()
     finally:
         pipeline.stop()
 
-def connect_and_handle_server(jetson_id):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.connect(('192.168.10.117', 65432))
-        print(f"Connected to server at 192.168.10.117:65432")
+def send_image_to_server(image, image_name, server_ip, port):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((server_ip, port))
 
-        while True:
-            data = client_socket.recv(1024)
-            if data == b'capture':
-                depth_data, color_data = capture_image()
-                if depth_data and color_data:
-                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    depth_filename = f"{timestamp}_{jetson_id}_depth.png"
-                    color_filename = f"{timestamp}_{jetson_id}_color.png"
+        # ファイル名を先に送信
+        s.sendall(image_name.encode())
 
-                    # Depth画像を送信
-                    client_socket.sendall(depth_filename.encode() + b'\n')
-                    client_socket.sendall(depth_data)
-                    client_socket.sendall(b'ENDOFIMAGE')
+        # 画像データを送信
+        is_success, buffer = cv2.imencode(".png", image)
+        if is_success:
+            s.sendall(buffer.tobytes())
 
-                    # Color画像を送信
-                    client_socket.sendall(color_filename.encode() + b'\n')
-                    client_socket.sendall(color_data)
-                    client_socket.sendall(b'ENDOFIMAGE')
+def main():
+    server_ip = '192.168.10.117'  # WindowsマシンのIPアドレス
+    port = 12345                     # サーバーのポート番号
 
-jetson_id = 1
-connect_and_handle_server(jetson_id)
+    while True:
+        color_image, depth_image = capture_images()
+        if color_image is not None and depth_image is not None:
+            timestamp = int(time.time())
+
+            # カラー画像を送信
+            send_image_to_server(color_image, f"color/{timestamp}.png", server_ip, port)
+
+            # 深度画像を送信
+            send_image_to_server(depth_image, f"depth/{timestamp}.png", server_ip, port)
+
+
+if __name__ == "__main__":
+    main()

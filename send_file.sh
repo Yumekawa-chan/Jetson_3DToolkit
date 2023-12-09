@@ -1,38 +1,23 @@
 #!/bin/bash
 
-# Path to the configuration file
-CONFIG_FILE = ./config.txt
+# 監視するカラー画像と深度画像のフォルダのパス
+COLOR_FOLDER="./color/"
+DEPTH_FOLDER="./depth/"
 
-# Check if the configuration file exists
-if [[! -f $CONFIG_FILE]]
-then
-echo "Configuration file not found: $CONFIG_FILE"
- exit 1
-fi
+# Windowsマシンの設定
+DESTINATION_USER="marik"
+DESTINATION_HOST="192.168.10.117"
+DESTINATION_COLOR_PATH="C:\Users\marik\033lab\tools\JetsonOperator\color"
+DESTINATION_DEPTH_PATH="C:\Users\marik\033lab\tools\JetsonOperator\depth"
 
-# Load settings from the configuration file
-source $CONFIG_FILE
-
-# Check if inotify-tools is installed
-if ! command - v inotifywait & > / dev/null
-then
-echo "inotify-tools is required. Please install it."
- exit 1
-fi
-
-# Monitor the directory
-inotifywait - m - e create - -format '%w%f' "$WATCH_DIR" | while read NEW_FILE
+# カラー画像のフォルダを監視して転送
+inotifywait -m -e create --format '%w%f' "${COLOR_FOLDER}" | while read NEWFILE
 do
-# Only transfer if the file extension is .ply
-  if [["$NEW_FILE" == *.ply]]
-   then
-    # Use scp to transfer the file to the Windows PC
-     sshpass - p "$SCP_PASS" scp "$NEW_FILE" "$SCP_DEST"
-       if [$? -eq 0]
-        then
-        echo "Transferred $NEW_FILE to Windows PC."
-        else
-        echo "Failed to transfer $NEW_FILE."
-        fi
-    fi
+    rsync -avz -e ssh "${NEWFILE}" "${DESTINATION_USER}@${DESTINATION_HOST}:${DESTINATION_COLOR_PATH}"
+done &
+
+# 深度画像のフォルダを監視して転送
+inotifywait -m -e create --format '%w%f' "${DEPTH_FOLDER}" | while read NEWFILE
+do
+    rsync -avz -e ssh "${NEWFILE}" "${DESTINATION_USER}@${DESTINATION_HOST}:${DESTINATION_DEPTH_PATH}"
 done

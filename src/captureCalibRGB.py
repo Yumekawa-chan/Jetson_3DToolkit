@@ -2,21 +2,37 @@ import socket
 import datetime
 import cv2
 import io
+import pyrealsense2 as rs
+import numpy as np
 
-def capture_image():
-    cap = cv2.VideoCapture(2)
-    ret, frame = cap.read()
-    if not ret:
-        print("Failed to capture image")
-        return None
+def capture_depth_color_images():
+    pipeline = rs.pipeline()
+    config = rs.config()
+    config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+    config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
 
-    mem_buffer = io.BytesIO()
-    is_success, buffer = cv2.imencode(".png", frame)
-    mem_buffer.write(buffer)
+    pipeline.start(config)
 
-    cap.release()
+    try:
+        frames = pipeline.wait_for_frames()
+        depth_frame = frames.get_depth_frame()
+        color_frame = frames.get_color_frame()
 
-    return mem_buffer.getvalue()
+        if not depth_frame or not color_frame:
+            print("Could not acquire depth or color frames.")
+            return None, None
+        depth_image = np.asanyarray(depth_frame.get_data())
+
+        color_image = np.asanyarray(color_frame.get_data())
+
+        depth_buffer = io.BytesIO()
+        color_buffer = io.BytesIO()
+        cv2.imencode('.png', depth_image, depth_buffer)
+        cv2.imencode('.png', color_image, color_buffer)
+
+        return depth_buffer.getvalue(), color_buffer.getvalue()
+    finally:
+        pipeline.stop()
 
 def connect_and_handle_server(jetson_id):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -26,12 +42,18 @@ def connect_and_handle_server(jetson_id):
         while True:
             data = client_socket.recv(1024)
             if data == b'capture':
-                image_data = capture_image()
-                if image_data:
+                depth_data, color_data = capture_depth_color_images()
+                if depth_data and color_data:
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filename = f"{timestamp}_{jetson_id}.png"
-                    client_socket.sendall(filename.encode() + b'\n')
-                    client_socket.sendall(image_data)
+                    depth_filename = f"{timestamp}_{jetson_id}_depth.png"
+                    color_filename = f"{timestamp}_{jetson_id}_color.png"
+
+                    client_socket.sendall(depth_filename.encode() + b'\n')
+                    client_socket.sendall(depth_data)
+                    client_socket.sendall(b'ENDOFIMAGE')
+
+                    client_socket.sendall(color_filename.encode() + b'\n')
+                    client_socket.sendall(color_data)
                     client_socket.sendall(b'ENDOFIMAGE')
 
 jetson_id = 1

@@ -6,17 +6,24 @@ import io
 def capture_image():
     cap = cv2.VideoCapture(2)
     ret, frame = cap.read()
+    cap.release()
     if not ret:
         print("Failed to capture image")
-        return None
+        return None, None
 
-    mem_buffer = io.BytesIO()
-    is_success, buffer = cv2.imencode(".png", frame)
-    mem_buffer.write(buffer)
+    color_image = frame
+    depth_image = frame 
 
-    cap.release()
+    mem_buffer_color = io.BytesIO()
+    is_success_color, buffer_color = cv2.imencode(".png", color_image)
+    mem_buffer_color.write(buffer_color)
 
-    return mem_buffer.getvalue()
+
+    mem_buffer_depth = io.BytesIO()
+    is_success_depth, buffer_depth = cv2.imencode(".png", depth_image)
+    mem_buffer_depth.write(buffer_depth)
+
+    return mem_buffer_color.getvalue(), mem_buffer_depth.getvalue()
 
 def connect_and_handle_server(jetson_id):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -26,13 +33,19 @@ def connect_and_handle_server(jetson_id):
         while True:
             data = client_socket.recv(1024)
             if data == b'capture':
-                image_data = capture_image()
-                if image_data:
+                color_image_data, depth_image_data = capture_image()
+                if color_image_data and depth_image_data:
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filename = f"{timestamp}_{jetson_id}.png"
-                    client_socket.sendall(filename.encode() + b'\n')
-                    client_socket.sendall(image_data)
+                    color_filename = f"{timestamp}_{jetson_id}_color.png"
+                    depth_filename = f"{timestamp}_{jetson_id}_depth.png"
+                    client_socket.sendall(f"FILENAME:{color_filename}\n".encode())
+                    client_socket.sendall(color_image_data)
                     client_socket.sendall(b'ENDOFIMAGE')
+                    client_socket.recv(1024) 
+                    client_socket.sendall(f"FILENAME:{depth_filename}\n".encode())
+                    client_socket.sendall(depth_image_data)
+                    client_socket.sendall(b'ENDOFIMAGE')
+                    client_socket.recv(1024) 
 
 jetson_id = 1
 connect_and_handle_server(jetson_id)

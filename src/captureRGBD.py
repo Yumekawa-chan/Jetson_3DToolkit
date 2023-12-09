@@ -29,11 +29,9 @@ def capture_image():
         depth_image = np.asanyarray(depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
 
-        # Convert depth image to color for visualization
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
         # Combine color image and depth image side by side
-        combined_image = np.hstack((color_image, depth_colormap))
+        combined_image = np.hstack((color_image, depth_image))
 
         # Encode the combined image as jpeg
         is_success, buffer = cv2.imencode(".png", combined_image)

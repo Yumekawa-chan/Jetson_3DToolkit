@@ -60,7 +60,7 @@ def connect_and_handle_server(jetson_id):
                     client_socket.sendall(f"FILENAME:{filename}\n".encode())
                     client_socket.sendall(image_data)
                     client_socket.sendall(b'ENDOFIMAGE')
-                    client_socket.recv(1024) 
+                    client_socket.recv(1024)
 
 jetson_id = 1
 connect_and_handle_server(jetson_id)

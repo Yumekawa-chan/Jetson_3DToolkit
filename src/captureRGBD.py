@@ -29,17 +29,10 @@ def capture_image():
         depth_image = np.asanyarray(depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
 
-        # Convert depth image to grayscale without applying colormap
-        depth_image_gray = cv2.convertScaleAbs(depth_image)
-
-        # Ensure both color and depth images have the same shape
-        depth_image_gray = cv2.resize(depth_image_gray, (640, 480), interpolation=cv2.INTER_NEAREST)
-
-        # Convert depth image to 3 channels (RGB format)
-        depth_image_rgb = cv2.cvtColor(depth_image_gray, cv2.COLOR_GRAY2RGB)
+        depth_image = cv2.cvtColor(depth_image, cv2.COLOR_GRAY2RGB)
 
         # Combine color image and depth image side by side
-        combined_image = np.hstack((color_image, depth_image_rgb))
+        combined_image = np.hstack((color_image, depth_image))
 
         # Encode the combined image as jpeg
         is_success, buffer = cv2.imencode(".png", combined_image)
@@ -63,7 +56,7 @@ def connect_and_handle_server(jetson_id):
                 image_data = capture_image()
                 if image_data:
                     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    filename = f"{timestamp}_{jetson_id}_combined.png"
+                    filename = f"{timestamp}_{jetson_id}.png"
                     client_socket.sendall(f"FILENAME:{filename}\n".encode())
                     client_socket.sendall(image_data)
                     client_socket.sendall(b'ENDOFIMAGE')

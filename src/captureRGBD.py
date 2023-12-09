@@ -30,11 +30,10 @@ def capture_image():
         color_image = np.asanyarray(color_frame.get_data())
 
         # Convert depth image to 8-bit for visualization
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
 
         # Encode the frames as jpeg to send over the network
         is_success_color, buffer_color = cv2.imencode(".png", color_image)
-        is_success_depth, buffer_depth = cv2.imencode(".png", depth_colormap)
+        is_success_depth, buffer_depth = cv2.imencode(".png", depth_image)
 
         if not is_success_color or not is_success_depth:
             print("Could not encode images.")

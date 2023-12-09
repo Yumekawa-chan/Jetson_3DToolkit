@@ -6,6 +6,7 @@ import pyrealsense2 as rs
 import numpy as np
 
 def capture_depth_color_images():
+    # RealSenseカメラの設定
     pipeline = rs.pipeline()
     config = rs.config()
     config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
@@ -21,13 +22,20 @@ def capture_depth_color_images():
         if not depth_frame or not color_frame:
             print("Could not acquire depth or color frames.")
             return None, None
+
+        # Depth画像の取得
         depth_image = np.asanyarray(depth_frame.get_data())
 
+        # Depth画像を8ビットに変換
+        depth_image_8bit = cv2.convertScaleAbs(depth_image, alpha=0.03)
+
+        # Color画像の取得
         color_image = np.asanyarray(color_frame.get_data())
 
+        # Depth画像とColor画像をメモリバッファにエンコード
         depth_buffer = io.BytesIO()
         color_buffer = io.BytesIO()
-        cv2.imencode('.png', depth_image, depth_buffer)
+        cv2.imencode('.png', depth_image_8bit, depth_buffer)
         cv2.imencode('.png', color_image, color_buffer)
 
         return depth_buffer.getvalue(), color_buffer.getvalue()

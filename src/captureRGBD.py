@@ -35,8 +35,11 @@ def capture_image():
         # Ensure both color and depth images have the same shape
         depth_image_gray = cv2.resize(depth_image_gray, (640, 480), interpolation=cv2.INTER_NEAREST)
 
+        # Convert depth image to 3 channels (RGB format)
+        depth_image_rgb = cv2.cvtColor(depth_image_gray, cv2.COLOR_GRAY2RGB)
+
         # Combine color image and depth image side by side
-        combined_image = np.hstack((color_image, depth_image_gray))
+        combined_image = np.hstack((color_image, depth_image_rgb))
 
         # Encode the combined image as jpeg
         is_success, buffer = cv2.imencode(".png", combined_image)

@@ -30,7 +30,7 @@ def capture_image():
         color_image = np.asanyarray(color_frame.get_data())
 
         depth_image = cv2.cvtColor(depth_image, cv2.COLOR_GRAY2RGB)
-
+        color_image = cv2.cvtColor(color_image, cv2.COLOR_GRAY2RGB)
         # Combine color image and depth image side by side
         combined_image = np.hstack((color_image, depth_image))
 

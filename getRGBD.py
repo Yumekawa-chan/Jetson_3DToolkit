@@ -8,11 +8,6 @@ from datetime import datetime
 jet_id = 1
 
 def capture_images():
-    if not os.path.exists('depth'):
-        os.makedirs('depth')
-    if not os.path.exists('color'):
-        os.makedirs('color')
-
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     pipeline = rs.pipeline()
@@ -33,8 +28,8 @@ def capture_images():
         color_image = np.asanyarray(color_frame.get_data())
         depth_image = np.asanyarray(depth_frame.get_data())
 
-        cv2.imwrite(f'color/color_{timestamp}_{jet_id}.png', color_image)
-        cv2.imwrite(f'depth/depth_{timestamp}_{jet_id}.png', depth_image)
+        cv2.imwrite(f'image/color_{timestamp}_{jet_id}.png', color_image)
+        cv2.imwrite(f'image/depth_{timestamp}_{jet_id}.png', depth_image)
 
     finally:
         pipeline.stop()

@@ -11,7 +11,7 @@ def capture_image(jetson_id):
         return
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"image/{timestamp}_{jetson_id}.png"
+    filename = f"image/calib_{timestamp}_{jetson_id}.png"
 
     if not os.path.exists('image'):
         os.makedirs('image')

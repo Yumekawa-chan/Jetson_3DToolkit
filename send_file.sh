@@ -3,9 +3,9 @@
 REMOTE_USER="***"
 REMOTE_HOST="192.168.10.125"
 REMOTE_PASS="********"
-REMOTE_BASE_DIR="~/work/jetson_3DToolkit"
+REMOTE_BASE_DIR="***/***/jetson_operator/"
 
-DIRECTORIES=("image" "depth" "color")
+DIRECTORIES=("image")
 
 for DIR in "${DIRECTORIES[@]}"
 do

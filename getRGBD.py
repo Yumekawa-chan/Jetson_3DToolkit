@@ -39,21 +39,23 @@ def capture_images():
     finally:
         pipeline.stop()
 
-host = '192.168.10.117'
-port = 12345
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind((host, port))
-server_socket.listen()
+host = '192.168.10.125'
+port = 65432
 
-print("Waiting for connection...")
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-while True:
-    client_socket, addr = server_socket.accept()
-    print(f"Connection from {addr}")
+try:
+    client_socket.connect((host, port))
+    print("Connected to server")
 
-    try:
+    while True:
         data = client_socket.recv(1024).decode()
+
         if data == 'capture':
             capture_images()
-    finally:
-        client_socket.close()
+        elif data == 'exit':
+            break
+
+finally:
+    client_socket.close()
+    print("Connection closed")

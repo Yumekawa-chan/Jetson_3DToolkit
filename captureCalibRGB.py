@@ -23,7 +23,7 @@ def capture_image(jetson_id):
 
 def connect_and_handle_server(jetson_id):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.connect(('192.168.10.117', 12345))
+        client_socket.connect(('192.168.10.117', 65432))
         print(f"Connected to server")
 
         while True:
